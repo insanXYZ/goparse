@@ -2,17 +2,21 @@ package goparse
 
 import (
 	"html/template"
+	"io"
 	"io/fs"
 	"os"
+	"regexp"
+	"strings"
 )
 
-const (
+var (
 	TMP_DIR_NAME = ".goparse-tmp"
+	HTML_EXT     = []string{"html", "gohtml"}
 )
 
 func NewTemplates(dir string) *template.Template {
 
-	removeLastSlash(&dir)
+	trimSlash(&dir)
 	ents, err := os.ReadDir(dir)
 	if err != nil {
 		ReturnPanic(ErrDirDoesntExist(dir))
@@ -27,11 +31,11 @@ func NewTemplates(dir string) *template.Template {
 
 	handleEntries(dir, ents)
 
-	return nil
+	return template.Must(template.ParseGlob(TMP_DIR_NAME))
 
 }
 
-func removeLastSlash(dir *string) {
+func trimSlash(dir *string) {
 
 	d := *dir
 
@@ -43,20 +47,66 @@ func removeLastSlash(dir *string) {
 func handleEntries(rootDir string, entries []fs.DirEntry) error {
 
 	for _, v := range entries {
+		fullPath := rootDir + "/" + v.Name()
+
 		if v.IsDir() {
-
-			dir := rootDir + "/" + v.Name()
-
-			ents, err := os.ReadDir(dir)
+			ents, err := os.ReadDir(fullPath)
 			if err != nil {
 				return err
 			}
-
-			handleEntries(dir, ents)
+			handleEntries(fullPath, ents)
+		} else {
+			handleEntry(fullPath, v.Name())
 		}
 
 	}
 
+	return nil
+
+}
+
+func handleEntry(fullpath, filename string) {
+	if isValidHtml(getExtensionFile(filename)) {
+		parserHtml(fullpath)
+	}
+}
+
+func isValidHtml(extension string) bool {
+	valid := false
+
+	for _, v := range HTML_EXT {
+		if v == extension {
+			valid = true
+		}
+	}
+
+	return valid
+}
+
+func getExtensionFile(filename string) string {
+	split := strings.Split(filename, ".")
+	return split[len(split)-1]
+}
+
+func parserHtml(path string) error {
+	file, err := os.OpenFile(path, os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+
+	b, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	replacedhtml := replaceHtmlTemplate(b)
+
+}
+
+func replaceHtmlTemplate(b []byte) string {
+	re := regexp.MustCompile(`{{\s*template\s*"[^/"]*/([^"]+)"\s*}}`)
+
+	return re.ReplaceAllString(string(b), `{{ template "$1" }}`)
 }
 
 //
