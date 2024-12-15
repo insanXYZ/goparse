@@ -6,14 +6,15 @@ import (
 )
 
 var (
-	ERR_CREATE         = errors.New("goparse: error create template")
-	ERR_CREATE_TMP_DIR = errors.New("failed created temporary directory")
+	ErrCreate         = errors.New("goparse: error create template")
+	ErrCreateTmpDir   = errors.New("failed created temporary directory")
+	ErrInvalidPattern = errors.New("invalid pattern")
 )
 
-func ReturnPanic(err error) {
-	panic(errors.New(fmt.Sprintf("%s\n%s", ERR_CREATE.Error(), err.Error())))
+func returnPanic(err error) {
+	panic(fmt.Errorf("%s\n%s", ErrCreate.Error(), err.Error()))
 }
 
-func ErrDirDoesntExist(dir string) error {
-	return errors.New(fmt.Sprintf("%s\ndirectory %s does not exists", ERR_CREATE.Error(), dir))
+func errDirDoesntExist(dir string) error {
+	return fmt.Errorf("%s\ndirectory %s does not exists", ErrCreate.Error(), dir)
 }

@@ -2,25 +2,24 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"net/http/httptest"
+	"net/http"
 
 	"github.com/insanXYZ/goparse"
 )
 
+const Port = ":8080"
+
 func main() {
-	t := goparse.NewTemplates("views/*.html")
 
-	recorder := httptest.NewRecorder()
-	err := t.ExecuteTemplate(recorder, "header.html", nil)
+	template := goparse.NewTemplates("views/*.html")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		template.ExecuteTemplate(w, "index.html", nil)
+	})
+
+	fmt.Printf("server running , port %s", Port)
+	err := http.ListenAndServe(Port, nil)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	b, err := io.ReadAll(recorder.Body)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Println(string(b))
 }
